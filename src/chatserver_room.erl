@@ -9,7 +9,6 @@
 -export([
 	start_link/0,
 	change_name/1,
-	remove_client/0,
 	get_client_list/0,
 	broadcast_message/1
 ]).
@@ -37,9 +36,6 @@ start_link() ->
 change_name(Name) ->
 	gen_server:call(whereis(?SERVER), {change_name, Name}).
 
-remove_client() ->
-	gen_server:call(whereis(?SERVER), {remove_client}).
-
 get_client_list() ->
 	gen_server:call(whereis(?SERVER), {get_client_list}).
 
@@ -59,16 +55,10 @@ handle_call({change_name, Name}, {Pid, _}, State) ->
 	%% Find out if it's a new client or old one changing name
 	case dict:find(Pid, State) of
 		{ok, OldName} -> send_to_all({changed_name, OldName, Name}, State);
-		error         -> send_to_all({new_client, Name}, State)
+		error         -> send_to_all({new_client, Name}, State), monitor(process, Pid)
 	end,
 	%% Update client list
-	NewState = dict:store(Pid, Name, State),
-	{reply, ok, NewState};
-
-%% Called on client disconnect
-handle_call({remove_client}, {Pid, _}, State) ->
-	NewState = dict:erase(Pid, State),
-	{reply, ok, NewState};
+	{reply, ok, dict:store(Pid, Name, State)};
 
 %% Called on client list request
 handle_call({get_client_list}, _From, State) ->
@@ -81,14 +71,18 @@ handle_call(_Request, _From, State) ->
 %% Called on client message
 handle_cast({broadcast_message, Pid, Msg}, State) ->
 	{ok, Name} = dict:find(Pid, State),
-	send_to_all({message, [Name, Msg]}, State),
+	send_to_all({message, Name, Msg}, State),
 	{noreply, State};
 
 %% Called on unknown cast
 handle_cast(_Msg, State) ->
 	{noreply, State}.
 
-%% Called on system message
+%% Called on client disconnect
+handle_info({'DOWN', _, process, Pid, _}, State) ->
+	{noreply, dict:erase(Pid, State)};
+
+%% Called on unknown system message
 handle_info(_Info, State) ->
 	{noreply, State}.
 
