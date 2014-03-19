@@ -4,145 +4,98 @@
 		<meta charset="utf-8" />
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Chatserver Interface</title>
+		<title>chatserver</title>
 		<link href="css/bootstrap.min.css" rel="stylesheet" />
-		<style>
-			body {
-				padding-top: 40px;
-				padding-bottom: 40px;
-				background-color: #fff;
-			}
-			.chat-small-panel {
-				margin: 0 auto;
-				max-width: 330px;
-			}
-			.chat-medium-panel {
-				margin: 0 auto;
-				max-width: 660px;
-			}
-			#chat-log {
-				padding: 0;
-				list-style: none;
-			}
-		</style>
+		<link href="css/chat_server.css" rel="stylesheet" />
 	</head>
 	<body>
 		<div class="container">
-			<!-- Connecting panel -->
-			<div id="conn-msg" class="panel panel-info chat-small-panel">
-				<div class="panel-heading">Connecting to chat server</div>
-				<div class="panel-body">Hang on for just a second...</div>
+			<!-- Navbar -->
+			<div class="row">
+				<div class="col-sm-12">
+					<nav class="navbar navbar-default">
+						<div class="navbar-header">
+							<a class="navbar-brand" href="#">chatserver</a>
+						</div>
+					</nav>
+				</div>
 			</div>
-
-			<!-- Error panel -->
-			<div id="conn-err" class="panel panel-danger chat-small-panel">
-				<div class="panel-heading">Error</div>
-				<div class="panel-body">Connection to chat server lost! :(</div>
+			<!-- Info alert -->
+			<div class="row">
+				<div class="col-sm-12">
+					<div id="chat-info-connecting" class="alert alert-info">
+						<strong>Connecting to chat server...</strong>
+					</div>
+					<div id="chat-info-disconnected" class="alert alert-danger" hidden>
+						<strong>Lost connection to chat server.</strong>
+						Don't worry, someone's getting fired.
+					</div>
+				</div>
 			</div>
-
-			<!-- Set name panel -->
-			<form id="form-name">
-				<div class="panel panel-default chat-small-panel">
-					<div class="panel-heading">Set name</div>
-					<div class="panel-body">
-						<p>Please enter your display name</p>
-						<div class="input-group">
-							<span class="input-group-addon">
-								<span class="glyphicon glyphicon-user"></span>
-							</span>
-							<input id="chat-name" type="text" class="form-control" placeholder="Name" required />
-							<span class="input-group-btn">
-								<button id="chat-set-name" class="btn btn-primary" type="submit">Set</button>
-							</span>
+			<!-- History/Userlist -->
+			<div class="row">
+				<div class="col-sm-9">
+					<div class="well">
+						<p>Chat history</p>
+						<hr />
+						<div id="chat-history">
+							<!--<p><span class="chat-name">dajoh</span>: hi</p>
+							<p><span class="chat-name">rohan</span>: r u ok</p>
+							<p><span class="chat-name">dajoh</span>: ye</p>-->
 						</div>
 					</div>
 				</div>
-			</form>
-
-			<!-- Chat panel -->
-			<form id="form-chat">
-				<div class="panel panel-default chat-medium-panel">
-					<div class="panel-heading">Chat</div>
-					<div class="panel-body">
-						<ol id="chat-log">
-							<li>Welcome to the chat room!</li>
-							<li></li>
-						</ol>
-						<div class="input-group">
-							<span class="input-group-addon">
-								<span class="glyphicon glyphicon-pencil"></span>
-							</span>
-							<input id="chat-msg" type="text" class="form-control" placeholder="Message" required />
-							<span class="input-group-btn">
-								<button id="chat-send" class="btn btn-primary" type="submit">Send</button>
-							</span>
+				<div class="col-sm-3">
+					<div class="well">
+						<p>User List</p>
+						<hr />
+						<div id="chat-user-list">
+							<!--<ul>
+								<li>brian</li>
+								<li>dajoh</li>
+								<li>rohan</li>
+							</ul>-->
 						</div>
 					</div>
 				</div>
-			</form>
+			</div>
+			<!-- Input -->
+			<div class="row">
+				<div class="col-sm-12">
+					<div class="well">
+						<form>
+							<div class="input-group">
+								<input id="chat-message-box" type="text" class="form-control" placeholder="Message" autocomplete="off" disabled />
+								<span class="input-group-btn">
+									<button id="chat-send-button" class="btn btn-primary" type="submit" disabled>Send</button>
+								</span>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+			<!-- Set name modal -->
+			<div class="modal fade" id="chat-set-name">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<form>
+							<div class="modal-header">
+								Set Name
+							</div>
+							<div class="modal-body">
+								<p>Please set your display name</p>
+								<input id="chat-set-name-text" type="text" class="form-control" placeholder="Name" autofocus />
+							</div>
+							<div class="modal-footer">
+								<button id="chat-set-name-submit" type="submit" class="btn btn-primary" data-dismiss="modal">Done</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
 		</div>
 		<script src="js/jquery.min.js"></script>
 		<script src="js/bootstrap.min.js"></script>
-		<script>
-			var socket = new WebSocket("ws://" + window.location.host + "/ws");
-
-			var connMsg = $("#conn-msg");
-			var connErr = $("#conn-err");
-			var nameForm = $("#form-name");
-			var chatForm = $("#form-chat");
-
-			var chatName = $("#chat-name");
-			var chatSetName = $("#chat-set-name");
-
-			var chatLog = $("#chat-log");
-			var chatMsg = $("#chat-msg");
-			var chatSend = $("#chat-send");
-
-			connMsg.hide();
-			connErr.hide();
-			nameForm.hide();
-			chatForm.hide();
-			connMsg.fadeIn(500);
-
-			socket.onopen = function() {
-				connMsg.fadeOut(500, function() {
-					nameForm.fadeIn(500);
-					chatName.focus();
-				});
-			};
-
-			socket.onmessage = function(msg) {
-				// wow such escape
-				$("<li></li>").text(msg.data).appendTo("#chat-log");
-				// oh my god i'm lazy
-				window.scrollTo(0,document.body.scrollHeight);
-			};
-
-			socket.onclose = function() {
-				connMsg.hide();
-				nameForm.hide();
-				chatForm.hide();
-				connErr.fadeIn(500);
-			};
-
-			chatSetName.click(function(e) {
-				e.preventDefault();
-				if(chatName.val() != "") {
-					socket.send(chatName.val());
-					nameForm.fadeOut(500, function() {
-						chatForm.fadeIn(500);
-						chatMsg.focus();
-					});
-				}
-			});
-
-			chatSend.click(function(e) {
-				e.preventDefault();
-				if(chatMsg.val() != "") {
-					socket.send(chatMsg.val());
-					chatMsg.val("");
-				}
-			});
-		</script>
+		<script src="js/chat_server.js"></script>
 	</body>
 </html>
