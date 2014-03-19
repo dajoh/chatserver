@@ -114,6 +114,8 @@
 			socket.onmessage = function(msg) {
 				// wow such escape
 				$("<li></li>").text(msg.data).appendTo("#chat-log");
+				// oh my god i'm lazy
+				window.scrollTo(0,document.body.scrollHeight);
 			};
 
 			socket.onclose = function() {
