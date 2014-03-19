@@ -1,0 +1,11 @@
+{application, chatserver, [
+	{description, "A websocket chat server with a web interface."},
+	{vsn, "1"},
+	{registered, [chatserver_sup]},
+	{applications, [
+		kernel,
+		stdlib
+	]},
+	{mod, {chatserver_app, []}},
+	{env, []}
+]}.
