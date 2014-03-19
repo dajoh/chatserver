@@ -23,31 +23,20 @@
 			<!-- Info alert -->
 			<div class="row">
 				<div class="col-sm-12">
-					<div id="chat-info-connecting" class="alert alert-info">
-						<strong>Connecting to chat server...</strong>
+					<div id="chat-info-connecting" class="alert alert-info" hidden>
+						<strong>connecting to chat server...</strong>
 					</div>
 					<div id="chat-info-disconnected" class="alert alert-danger" hidden>
-						<strong>Lost connection to chat server.</strong>
-						Don't worry, someone's getting fired.
+						<strong>lost connection to chat server</strong><br />
+						don't worry, someone's getting fired
 					</div>
 				</div>
 			</div>
 			<!-- History/Userlist -->
 			<div class="row">
-				<div class="col-sm-9">
+				<div class="col-sm-3 col-sm-push-9">
 					<div class="well">
-						<p>Chat history</p>
-						<hr />
-						<div id="chat-history">
-							<!--<p><span class="chat-name">dajoh</span>: hi</p>
-							<p><span class="chat-name">rohan</span>: r u ok</p>
-							<p><span class="chat-name">dajoh</span>: ye</p>-->
-						</div>
-					</div>
-				</div>
-				<div class="col-sm-3">
-					<div class="well">
-						<p>User List</p>
+						<p>user list</p>
 						<hr />
 						<div id="chat-user-list">
 							<!--<ul>
@@ -58,6 +47,17 @@
 						</div>
 					</div>
 				</div>
+				<div class="col-sm-9 col-sm-pull-3">
+					<div class="well">
+						<p>chat history</p>
+						<hr />
+						<div id="chat-history">
+							<!--<p><span class="chat-name">dajoh</span>: hi</p>
+							<p><span class="chat-name">rohan</span>: r u ok</p>
+							<p><span class="chat-name">dajoh</span>: ye</p>-->
+						</div>
+					</div>
+				</div>
 			</div>
 			<!-- Input -->
 			<div class="row">
@@ -65,9 +65,9 @@
 					<div class="well">
 						<form>
 							<div class="input-group">
-								<input id="chat-message-box" type="text" class="form-control" placeholder="Message" autocomplete="off" disabled />
+								<input id="chat-message-box" type="text" class="form-control" placeholder="message" autocomplete="off" disabled />
 								<span class="input-group-btn">
-									<button id="chat-send-button" class="btn btn-primary" type="submit" disabled>Send</button>
+									<button id="chat-send-button" class="btn btn-primary" type="submit" disabled>send</button>
 								</span>
 							</div>
 						</form>
@@ -83,8 +83,8 @@
 								Set Name
 							</div>
 							<div class="modal-body">
-								<p>Please set your display name</p>
-								<input id="chat-set-name-text" type="text" class="form-control" placeholder="Name" autofocus />
+								<p>Please set your display name:</p>
+								<input id="chat-set-name-text" type="text" class="form-control" placeholder="name" autofocus />
 							</div>
 							<div class="modal-footer">
 								<button id="chat-set-name-submit" type="submit" class="btn btn-primary" data-dismiss="modal">Done</button>

@@ -13,6 +13,8 @@ var chatSetName = $("#chat-set-name");
 var chatSetNameText = $("#chat-set-name-text");
 var chatSetNameSubmit = $("#chat-set-name-submit");
 
+infoConnecting.slideDown(500);
+
 socket.onopen = function() {
 	infoConnecting.slideUp(500);
 	chatSetName.modal();
