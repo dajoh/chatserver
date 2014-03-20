@@ -15,27 +15,28 @@ init({tcp, http}, _Req, _Opts) ->
 websocket_init(_TransportName, Req, _Opts) ->
 	{ok, Req, []}.
 
-%% Called when we get a text message.
+%% Called when we get a JSON message.
 websocket_handle({text, Json}, Req, State) ->
 	try jiffy:decode(Json) of
-		%% Handle name change
 		{[{<<"type">>, <<"set_name">>}, {<<"name">>, Name}]} ->
 			if
 				byte_size(Name) < 16, byte_size(Name) > 0 ->
-					chatserver_room:change_name(Name),
-					{reply, {text, build_client_list()}, Req, State};
+					case chatserver_room:join_room(Name) of
+						{ok, ClientList} ->
+							{reply, {text, get_client_list_json(ClientList)}, Req, State};
+						{error, Reason} ->
+							{reply, {text, get_error_json(Reason)}, Req, State}
+					end;
 				true ->
-					{shutdown, Req, State}
+					{reply, {text, get_error_json(bad_name)}, Req, State}
 			end;
-
-		%% Handle message
 		{[{<<"type">>, <<"send_msg">>}, {<<"text">>, Text}]} ->
 			if
 				byte_size(Text) < 256, byte_size(Text) > 0 ->
-					chatserver_room:broadcast_message(Text),
+					chatserver_room:send_message(Text),
 					{ok, Req, State};
 				true ->
-					{shutdown, Req, State}
+					{reply, {text, get_error_json(bad_message)}, Req, State}
 			end
 	catch
 		_ -> {shutdown, Req, State} %% fuq the police
@@ -72,17 +73,23 @@ websocket_info({disconnected, Name}, Req, State) ->
 
 %% Called on unknown system messages.
 websocket_info(_Info, Req, State) ->
-	io:format("~p ~n", [_Info]),
 	{ok, Req, State}.
 
 %% Called when clients disconnect.
 websocket_terminate(_Reason, _Req, _State) ->
 	ok.
 
-%% Client list builder.
-build_client_list() ->
-	{_, Names} = lists:unzip(chatserver_room:get_client_list()),
+%% Formats the client list as JSON for the client.
+get_client_list_json(ClientList) ->
+	{_, Names} = lists:unzip(ClientList),
 	jiffy:encode({[
 		{type, client_list},
 		{list, Names}
+	]}).
+
+%% Formats errors as JSON.
+get_error_json(Reason) ->
+	jiffy:encode({[
+		{type, error},
+		{what, Reason}
 	]}).

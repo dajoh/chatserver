@@ -8,9 +8,8 @@
 
 -export([
 	start_link/0,
-	change_name/1,
-	get_client_list/0,
-	broadcast_message/1
+	join_room/1,
+	send_message/1
 ]).
 
 %% ------------------------------------------------------------------
@@ -33,65 +32,62 @@
 start_link() ->
 	gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
-change_name(Name) ->
-	gen_server:call(whereis(?SERVER), {change_name, Name}).
+join_room(Name) ->
+	gen_server:call(whereis(?SERVER), {join_room, Name}).
 
-get_client_list() ->
-	gen_server:call(whereis(?SERVER), {get_client_list}).
-
-broadcast_message(Msg) ->
-	gen_server:cast(whereis(?SERVER), {broadcast_message, self(), Msg}).
+send_message(Text) ->
+	gen_server:cast(whereis(?SERVER), {send_message, self(), Text}).
 
 %% ------------------------------------------------------------------
 %% gen_server Function Definitions
 %% ------------------------------------------------------------------
 
-%% Called on init
 init(_Args) ->
-	{ok, dict:new()}.
+	{ok, {dict:new(), dict:new()}}.
 
-%% Called on new client
-handle_call({change_name, Name}, {Pid, _}, State) ->
-	%% Find out if it's a new client or old one changing name
-	case dict:find(Pid, State) of
-		{ok, OldName} -> send_to_all({changed_name, OldName, Name}, State);
-		error         -> send_to_all({connected, Name}, State), monitor(process, Pid)
-	end,
-	%% Update client list
-	{reply, ok, dict:store(Pid, Name, State)};
-
-%% Called on client list request
-handle_call({get_client_list}, _From, State) ->
-	{reply, dict:to_list(State), State};
-
-%% Called on unknown call
+handle_call({join_room, Name}, {Pid, _}, {PidToName, NameToPid}) ->
+	case dict:is_key(Pid, PidToName) of
+		true ->
+			{reply, {error, already_in}, {PidToName, NameToPid}};
+		false ->
+			case dict:is_key(Name, NameToPid) of
+				true ->
+					{reply, {error, name_taken}, {PidToName, NameToPid}};
+				false ->
+					monitor(process, Pid),
+					broadcast({connected, Name}, PidToName),
+					NewPidToName = dict:store(Pid, Name, PidToName),
+					NewNameToPid = dict:store(Name, Pid, NameToPid),
+					{reply, {ok, dict:to_list(NewPidToName)}, {NewPidToName, NewNameToPid}}
+			end
+	end;
 handle_call(_Request, _From, State) ->
-	{reply, unknown_call, State}.
+	{reply, {error, unknown_message}, State}.
 
-%% Called on client message
-handle_cast({broadcast_message, Pid, Msg}, State) ->
-	{ok, Name} = dict:find(Pid, State),
-	send_to_all({message, Name, Msg}, State),
-	{noreply, State};
-
-%% Called on unknown cast
+handle_cast({send_message, Pid, Text}, {PidToName, NameToPid}) ->
+	case dict:is_key(Pid, PidToName) of
+		true ->
+			broadcast({message, dict:fetch(Pid, PidToName), Text}, PidToName);
+		false ->
+			omg_plz
+	end,
+	{noreply, {PidToName, NameToPid}};
 handle_cast(_Msg, State) ->
 	{noreply, State}.
 
-%% Called on client disconnect
-handle_info({'DOWN', _, process, Pid, _}, State) ->
-	send_to_all({disconnected, dict:fetch(Pid, State)}, State),
-	{noreply, dict:erase(Pid, State)};
-
-%% Called on unknown system message
+handle_info({'DOWN', _, process, Pid, _}, {PidToName, NameToPid}) ->
+	Name = dict:fetch(Pid, PidToName),
+	broadcast({disconnected, Name}, PidToName),
+	{noreply, {
+		dict:erase(Pid, PidToName),
+		dict:erase(Name, NameToPid)
+	}};
 handle_info(_Info, State) ->
 	{noreply, State}.
 
-%% Called on terminate
 terminate(_Reason, _State) ->
 	ok.
 
-%% Called on version change
 code_change(_OldVsn, State, _Extra) ->
 	{ok, State}.
 
@@ -99,8 +95,5 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal Function Definitions
 %% ------------------------------------------------------------------
 
-send_to_all(Msg, Clients) ->
-	dict:map(fun (K, V) ->
-		K ! Msg,
-		{K, V}
-	end, Clients).
+broadcast(Msg, PidToName) ->
+	dict:map(fun (Pid, _) -> Pid ! Msg end, PidToName).
