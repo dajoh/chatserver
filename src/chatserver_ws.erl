@@ -21,7 +21,7 @@ websocket_handle({text, Json}, Req, State) ->
 		%% Handle name change
 		{[{<<"type">>, <<"set_name">>}, {<<"name">>, Name}]} ->
 			if
-				byte_size(Name) < 16 ->
+				byte_size(Name) < 16, byte_size(Name) > 1 ->
 					chatserver_room:change_name(Name),
 					{reply, {text, build_client_list()}, Req, State};
 				true ->
@@ -31,7 +31,7 @@ websocket_handle({text, Json}, Req, State) ->
 		%% Handle message
 		{[{<<"type">>, <<"send_msg">>}, {<<"text">>, Text}]} ->
 			if
-				byte_size(Text) < 256 ->
+				byte_size(Text) < 256, byte_size(Text) > 1 ->
 					chatserver_room:broadcast_message(Text),
 					{ok, Req, State};
 				true ->
