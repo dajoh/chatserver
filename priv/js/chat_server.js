@@ -20,7 +20,12 @@ function sendJSON(obj) {
 }
 
 function appendMessage(from, text) {
-	var entry = $("<p></p>").text(": " + text).appendTo(chatHistory);
+	var text = urlize(text, {
+		autoescape: true,
+		target: "_blank"
+	});
+
+	var entry = $("<p>: " + text + "</p>").appendTo(chatHistory);
 	$("<span class=\"chat-name\"></span>").text(from).prependTo(entry);
 }
 

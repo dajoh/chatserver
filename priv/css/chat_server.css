@@ -22,3 +22,9 @@
 	list-style: none;
 	word-break: break-all;
 }
+
+@media(min-width: 768px) {
+	.col-sm-3 {
+		padding-left: 5px;
+	}
+}
