@@ -1,7 +1,9 @@
-var socket = new WebSocket("ws://" + window.location.host + "/ws");
+// --------------------------------------------------------------------------
+// Elements
+// --------------------------------------------------------------------------
 
-var infoConnecting = $("#chat-info-connecting");
-var infoDisconnected = $("#chat-info-disconnected");
+var infoError = $("#chat-info-error");
+var infoNotice = $("#chat-info-notice");
 
 var chatHistory = $("#chat-history");
 var chatUserList = $("#chat-user-list");
@@ -9,83 +11,135 @@ var chatUserList = $("#chat-user-list");
 var chatMsgBox = $("#chat-message-box");
 var chatSendBtn = $("#chat-send-button");
 
-var chatSetName = $("#chat-set-name");
 var chatSetNameText = $("#chat-set-name-text");
+var chatSetNameModal = $("#chat-set-name-modal");
 var chatSetNameSubmit = $("#chat-set-name-submit");
 
-infoConnecting.slideDown(500);
+// --------------------------------------------------------------------------
+// Networking
+// --------------------------------------------------------------------------
 
-function sendJSON(obj) {
-	socket.send(JSON.stringify(obj));
+var netSocket = null;
+
+function netConnect() {
+	netSocket = new WebSocket("ws://" + window.location.host + "/ws");
+	netSocket.onopen = uiOnConnect;
+	netSocket.onclose = uiOnDisconnect;
+	netSocket.onmessage = uiOnMessage;
 }
 
-function appendMessage(from, text) {
-	var text = urlize(text, {
-		autoescape: true,
-		target: "_blank"
+function netSendMessage(msg) {
+	netSocket.send(JSON.stringify(msg));
+}
+
+// --------------------------------------------------------------------------
+// Backend API
+// --------------------------------------------------------------------------
+
+function apiJoin(name) {
+	netSendMessage({
+		"type": "set_name",
+		"name": name
 	});
-
-	var entry = $("<p>: " + text + "</p>").appendTo(chatHistory);
-	$("<span class=\"chat-name\"></span>").text(from).prependTo(entry);
 }
 
-function appendSysMessage(text) {
+function apiSend(text) {
+	netSendMessage({
+		"type": "send_msg",
+		"text": text
+	});
+}
+
+// --------------------------------------------------------------------------
+// User Interface
+// --------------------------------------------------------------------------
+
+var uiName = null;
+var uiUserList = [];
+
+function uiOnConnect() {
+	infoNotice.slideUp(600);
+
+	if(uiName == null) {
+		chatSetNameModal.modal();
+	} else {
+		apiJoin(uiName);
+	}
+}
+
+function uiOnMessage(msg) {
+	msg = JSON.parse(msg.data);
+
+	switch(msg.type) {
+		case "error":
+			switch(msg.what) {
+				case "bad_name":       infoError.text("name too long");       break;
+				case "bad_message":    infoError.text("message too long");    break;
+				case "already_joined": infoError.text("developer fucked up"); break;
+			}
+			infoError.slideDown(600).delay(2500).slideUp(600);
+			break;
+		case "message":
+			uiRenderMessage(msg.from, msg.text);
+			uiScrollHistory();
+			break;
+		case "client_list":
+			uiUserList = msg.list;
+			uiEnableControls();
+			uiRenderUserList();
+			break;
+		case "connected":
+			listAdd(uiUserList, msg.user);
+			uiRenderUserList();
+			uiRenderWebMessage(msg.user + " joined the chat.");
+			uiScrollHistory();
+			break;
+		case "disconnected":
+			listRemove(uiUserList, msg.user);
+			uiRenderUserList();
+			uiRenderWebMessage(msg.user + " left the chat.");
+			uiScrollHistory();
+			break;
+	}
+}
+
+function uiOnDisconnect() {
+	uiDisableControls();
+	infoNotice.text("reconnecting").slideDown(600);
+	netConnect();
+}
+
+function uiScrollHistory() {
+	chatHistory.scrollTop(chatHistory[0].scrollHeight);
+}
+
+function uiRenderUserList() {
+	chatUserList.empty();
+	uiUserList.forEach(function(user) {
+		$("<li></li>").text(user).appendTo(chatUserList);
+	});
+}
+
+function uiRenderMessage(from, text) {
+	var text = urlize(text, {autoescape: true, target: "_blank"});
+	var entry = $("<p>: " + text + "</p>").appendTo(chatHistory);
+	$("<span class=\"chat-username\"></span>").text(from).prependTo(entry);
+}
+
+function uiRenderWebMessage(text) {
 	$("<p></p>").text(text).appendTo(chatHistory);
 }
 
-function addUser(name) {
-	$("<li></li>").text(name).appendTo(chatUserList);
-}
-
-function removeUser(name) {
-	$("#chat-user-list > li").filter(function() {
-		return $.text([this]) === name;
-	}).remove();
-}
-
-socket.onopen = function() {
-	infoConnecting.slideUp(500);
-	chatSetName.modal();
-};
-
-socket.onmessage = function(raw) {
-	var msg = JSON.parse(raw.data);
-
-	if(msg["type"] == "message") {
-		appendMessage(msg["from"], msg["text"]);
-	}
-	else if(msg["type"] == "connected") {
-		appendSysMessage(msg["user"] + " entered the chat.");
-		addUser(msg["user"]);
-	}
-	else if(msg["type"] == "disconnected") {
-		appendSysMessage(msg["user"] + " left the chat.");
-		removeUser(msg["user"]);
-	}
-	else if(msg["type"] == "client_list") {
-		msg["list"].forEach(addUser);
-	}
-
-	chatHistory.scrollTop(chatHistory[0].scrollHeight);
-};
-
-socket.onclose = function() {
-	infoConnecting.slideUp(500, function() {
-		infoDisconnected.slideDown(500);
-		chatMsgBox.prop("disabled", true);
-		chatSendBtn.prop("disabled", true);
-	});
-};
-
-chatSetNameSubmit.click(function() {
-	sendJSON({
-		"type": "set_name",
-		"name": chatSetNameText.val()
-	});
+function uiEnableControls() {
 	chatMsgBox.prop("disabled", false);
 	chatSendBtn.prop("disabled", false);
 	chatMsgBox.focus();
-});
+}
+
+function uiDisableControls() {
+	chatMsgBox.prop("disabled", true);
+	chatSendBtn.prop("disabled", true);
+}
 
 chatSendBtn.click(function(e) {
 	e.preventDefault();
@@ -94,9 +148,36 @@ chatSendBtn.click(function(e) {
 		return;
 	}
 
-	sendJSON({
-		"type": "send_msg",
-		"text": chatMsgBox.val()
-	});
+	apiSend(chatMsgBox.val());
 	chatMsgBox.val("");
 });
+
+chatSetNameSubmit.click(function(e) {
+	if(chatSetNameText.val() == "") {
+		return;
+	}
+
+	uiName = chatSetNameText.val();
+	apiJoin(uiName);
+});
+
+// --------------------------------------------------------------------------
+// Helpers
+// --------------------------------------------------------------------------
+
+function listAdd(array, value) {
+	array.push(value);
+}
+
+function listRemove(array, value) {
+	var idx = array.indexOf(value);
+	if(idx > -1) {
+		array.splice(idx, 1);
+	}
+}
+
+// --------------------------------------------------------------------------
+// Main
+// --------------------------------------------------------------------------
+
+netConnect();

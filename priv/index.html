@@ -4,7 +4,7 @@
 		<meta charset="utf-8" />
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>chatserver</title>
+		<title>chat.awfully.sexy</title>
 		<link href="css/bootstrap.min.css" rel="stylesheet" />
 		<link href="css/chat_server.css" rel="stylesheet" />
 	</head>
@@ -15,24 +15,21 @@
 				<div class="col-sm-12">
 					<nav class="navbar navbar-default">
 						<div class="navbar-header">
-							<a class="navbar-brand" href="#">chatserver</a>
+							<a class="navbar-brand" href="#">chat.awfully.sexy</a>
 						</div>
 					</nav>
 				</div>
 			</div>
-			<!-- Info alert -->
+			<!-- Error/notice alert -->
 			<div class="row">
 				<div class="col-sm-12">
-					<div id="chat-info-connecting" class="alert alert-info" hidden>
-						<strong>connecting to chat server...</strong>
+					<div id="chat-info-error" class="alert alert-danger" hidden>
 					</div>
-					<div id="chat-info-disconnected" class="alert alert-danger" hidden>
-						<strong>lost connection to chat server</strong><br />
-						don't worry, someone's getting fired
+					<div id="chat-info-notice" class="alert alert-info" hidden>
 					</div>
 				</div>
 			</div>
-			<!-- History/Userlist -->
+			<!-- History/User List -->
 			<div class="row">
 				<div class="col-sm-3 col-sm-push-9">
 					<div class="well">
@@ -47,9 +44,6 @@
 						<p>chat history</p>
 						<hr />
 						<div id="chat-history">
-							<!--<p><span class="chat-name">dajoh</span>: hi</p>
-							<p><span class="chat-name">rohan</span>: r u ok</p>
-							<p><span class="chat-name">dajoh</span>: ye</p>-->
 						</div>
 					</div>
 				</div>
@@ -70,15 +64,15 @@
 				</div>
 			</div>
 			<!-- Set name modal -->
-			<div class="modal fade" id="chat-set-name">
+			<div class="modal fade" id="chat-set-name-modal">
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<form>
 							<div class="modal-header">
-								Set Name
+								Connected!
 							</div>
 							<div class="modal-body">
-								<p>Please set your display name:</p>
+								<p>Please enter your display name:</p>
 								<input id="chat-set-name-text" type="text" class="form-control" placeholder="Name" autofocus />
 							</div>
 							<div class="modal-footer">

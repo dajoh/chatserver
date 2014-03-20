@@ -1,21 +1,30 @@
 .container {
 	padding-top: 32px;
 }
+
 .navbar, .alert, .well {
 	border-radius: 0;
 }
-.chat-name {
+
+.chat-system {
+	color: #ff9999;
+}
+
+.chat-username {
 	color: #9999ff;
 }
+
 #chat-history, #chat-user-list {
 	height: 256px;
 	overflow-y: auto;
 }
+
 #chat-history > p {
 	margin: 0;
 	padding: 0;
 	word-break: break-all;
 }
+
 #chat-user-list {
 	margin: 0;
 	padding: 0;
