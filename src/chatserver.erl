@@ -7,6 +7,7 @@ start() ->
 	ensure_started(ranch),
 	ensure_started(cowlib),
 	ensure_started(cowboy),
+	ensure_started(jiffy),
 	ensure_started(chatserver).
 
 ensure_started(App) ->

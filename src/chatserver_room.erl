@@ -55,7 +55,7 @@ handle_call({change_name, Name}, {Pid, _}, State) ->
 	%% Find out if it's a new client or old one changing name
 	case dict:find(Pid, State) of
 		{ok, OldName} -> send_to_all({changed_name, OldName, Name}, State);
-		error         -> send_to_all({new_client, Name}, State), monitor(process, Pid)
+		error         -> send_to_all({connected, Name}, State), monitor(process, Pid)
 	end,
 	%% Update client list
 	{reply, ok, dict:store(Pid, Name, State)};
@@ -80,6 +80,7 @@ handle_cast(_Msg, State) ->
 
 %% Called on client disconnect
 handle_info({'DOWN', _, process, Pid, _}, State) ->
+	send_to_all({disconnected, dict:fetch(Pid, State)}, State),
 	{noreply, dict:erase(Pid, State)};
 
 %% Called on unknown system message

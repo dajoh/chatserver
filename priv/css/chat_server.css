@@ -16,7 +16,7 @@
 	padding: 0;
 	word-break: break-all;
 }
-#chat-user-list > ul {
+#chat-user-list {
 	margin: 0;
 	padding: 0;
 	list-style: none;
