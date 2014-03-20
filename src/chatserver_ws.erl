@@ -13,16 +13,32 @@ init({tcp, http}, _Req, _Opts) ->
 
 %% Called on new websocket client.
 websocket_init(_TransportName, Req, _Opts) ->
-	{ok, Req, new_client}.
+	{ok, Req, []}.
 
 %% Called when we get a text message.
 websocket_handle({text, Json}, Req, State) ->
-	handle_json_msg(Json),
-	case State of
-		new_client ->
-			{reply, {text, build_client_list()}, Req, old_client};
-		old_client ->
-			{ok, Req, old_client}
+	try jiffy:decode(Json) of
+		%% Handle name change
+		{[{<<"type">>, <<"set_name">>}, {<<"name">>, Name}]} ->
+			if
+				byte_size(Name) < 16 ->
+					chatserver_room:change_name(Name),
+					{reply, {text, build_client_list()}, Req, State};
+				true ->
+					{shutdown, Req, State}
+			end;
+
+		%% Handle message
+		{[{<<"type">>, <<"send_msg">>}, {<<"text">>, Text}]} ->
+			if
+				byte_size(Text) < 256 ->
+					chatserver_room:broadcast_message(Text),
+					{ok, Req, State};
+				true ->
+					{shutdown, Req, State}
+			end
+	catch
+		_ -> {shutdown, Req, State} %% fuq the police
 	end;
 
 %% Called when we get an unknown message.
@@ -62,17 +78,6 @@ websocket_info(_Info, Req, State) ->
 %% Called when clients disconnect.
 websocket_terminate(_Reason, _Req, _State) ->
 	ok.
-
-%% Internal JSON message processor.
-handle_json_msg(Json) ->
-	try jiffy:decode(Json) of
-		{[{<<"type">>, <<"set_name">>}, {<<"name">>, Name}]} ->
-			chatserver_room:change_name(Name);
-		{[{<<"type">>, <<"send_msg">>}, {<<"text">>, Text}]} ->
-			chatserver_room:broadcast_message(Text)
-	catch
-		_ -> fuck_the_police
-	end.
 
 %% Client list builder.
 build_client_list() ->

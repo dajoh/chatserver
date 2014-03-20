@@ -58,7 +58,6 @@ socket.onmessage = function(raw) {
 		removeUser(msg["user"]);
 	}
 	else if(msg["type"] == "client_list") {
-		appendSysMessage("Users in the chat: " + msg["list"].join(", "));
 		msg["list"].forEach(addUser);
 	}
 
