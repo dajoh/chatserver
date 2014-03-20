@@ -38,6 +38,9 @@ websocket_handle({text, Json}, Req, State) ->
 				true ->
 					{reply, {text, get_error_json(bad_message)}, Req, State}
 			end;
+		{[{<<"type">>, <<"get_history">>}]} ->
+			{reply, {text, get_history_json()}, Req, State};
+
 		_ -> {shutdown, Req, State} %% unknown message
 	catch
 		_ -> {shutdown, Req, State} %% fuq the police
@@ -80,7 +83,7 @@ websocket_info(_Info, Req, State) ->
 websocket_terminate(_Reason, _Req, _State) ->
 	ok.
 
-%% Formats the client list as JSON for the client.
+%% Formats the client list as JSON.
 get_client_list_json(ClientList) ->
 	{_, Names} = lists:unzip(ClientList),
 	jiffy:encode({[
@@ -93,4 +96,19 @@ get_error_json(Reason) ->
 	jiffy:encode({[
 		{type, error},
 		{what, Reason}
+	]}).
+
+%% Formats the history buffer as JSON.
+get_history_json() ->
+	History = lists:map(
+		fun ({message, From, Text}) ->
+				{[{type, message}, {from, From}, {text, Text}]};
+			({connected, User}) ->
+				{[{type, user_joined}, {user, User}]};
+			({disconnected, User}) ->
+				{[{type, user_left}, {user, User}]}
+	end, chatserver_hist:retrieve()),
+	jiffy:encode({[
+		{type, history},
+		{hist, History}
 	]}).

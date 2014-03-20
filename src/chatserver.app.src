@@ -2,7 +2,7 @@
 	{description, "A websocket chat server with a web interface."},
 	{vsn, "1"},
 	{modules, []},
-	{registered, [chatserver_sup, chatserver_room, chatserver_web]},
+	{registered, [chatserver_hist, chatserver_sup, chatserver_room, chatserver_web]},
 	{applications, [
 		kernel,
 		stdlib,

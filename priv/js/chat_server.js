@@ -50,6 +50,12 @@ function apiSend(text) {
 	});
 }
 
+function apiGetHistory() {
+	netSendMessage({
+		"type": "get_history"
+	});
+}
+
 // --------------------------------------------------------------------------
 // User Interface
 // --------------------------------------------------------------------------
@@ -88,6 +94,7 @@ function uiOnMessage(msg) {
 			uiUserList = msg.list;
 			uiEnableControls();
 			uiRenderUserList();
+			apiGetHistory();
 			break;
 		case "user_joined":
 			listAdd(uiUserList, msg.user);
@@ -99,6 +106,23 @@ function uiOnMessage(msg) {
 			listRemove(uiUserList, msg.user);
 			uiRenderUserList();
 			uiRenderWebMessage(msg.user + " left the chat.");
+			uiScrollHistory();
+			break;
+		case "history":
+			chatHistory.empty();
+			msg.hist.forEach(function (msg) {
+				switch(msg.type) {
+					case "message":
+						uiRenderMessage(msg.from, msg.text);
+						break;
+					case "user_joined":
+						uiRenderWebMessage(msg.user + " joined the chat.");
+						break;
+					case "user_left":
+						uiRenderWebMessage(msg.user + " left the chat.");
+						break;
+				}
+			});
 			uiScrollHistory();
 			break;
 	}

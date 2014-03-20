@@ -96,4 +96,5 @@ code_change(_OldVsn, State, _Extra) ->
 %% ------------------------------------------------------------------
 
 broadcast(Msg, PidToName) ->
+	chatserver_hist:append(Msg),
 	dict:map(fun (Pid, _) -> Pid ! Msg end, PidToName).
