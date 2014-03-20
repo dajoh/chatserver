@@ -18,7 +18,7 @@ websocket_init(_TransportName, Req, _Opts) ->
 %% Called when we get a JSON message.
 websocket_handle({text, Json}, Req, State) ->
 	try jiffy:decode(Json) of
-		{[{<<"type">>, <<"set_name">>}, {<<"name">>, Name}]} ->
+		{[{<<"type">>, <<"join">>}, {<<"name">>, Name}]} ->
 			if
 				byte_size(Name) < 16, byte_size(Name) > 0 ->
 					case chatserver_room:join_room(Name) of
@@ -30,14 +30,15 @@ websocket_handle({text, Json}, Req, State) ->
 				true ->
 					{reply, {text, get_error_json(bad_name)}, Req, State}
 			end;
-		{[{<<"type">>, <<"send_msg">>}, {<<"text">>, Text}]} ->
+		{[{<<"type">>, <<"message">>}, {<<"text">>, Text}]} ->
 			if
 				byte_size(Text) < 256, byte_size(Text) > 0 ->
 					chatserver_room:send_message(Text),
 					{ok, Req, State};
 				true ->
 					{reply, {text, get_error_json(bad_message)}, Req, State}
-			end
+			end;
+		_ -> {shutdown, Req, State} %% unknown message
 	catch
 		_ -> {shutdown, Req, State} %% fuq the police
 	end;
@@ -58,7 +59,7 @@ websocket_info({message, Name, Msg}, Req, State) ->
 %% Called on connections from other users.
 websocket_info({connected, Name}, Req, State) ->
 	Json = jiffy:encode({[
-		{type, connected},
+		{type, user_joined},
 		{user, Name}
 	]}),
 	{reply, {text, Json}, Req, State};
@@ -66,7 +67,7 @@ websocket_info({connected, Name}, Req, State) ->
 %% Called on disconnects from other users.
 websocket_info({disconnected, Name}, Req, State) ->
 	Json = jiffy:encode({[
-		{type, disconnected},
+		{type, user_left},
 		{user, Name}
 	]}),
 	{reply, {text, Json}, Req, State};
@@ -83,7 +84,7 @@ websocket_terminate(_Reason, _Req, _State) ->
 get_client_list_json(ClientList) ->
 	{_, Names} = lists:unzip(ClientList),
 	jiffy:encode({[
-		{type, client_list},
+		{type, user_list},
 		{list, Names}
 	]}).
 
