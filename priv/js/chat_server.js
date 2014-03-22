@@ -87,7 +87,7 @@ function uiOnMessage(msg) {
 			infoError.slideDown(600).delay(2500).slideUp(600);
 			break;
 		case "message":
-			uiRenderMessage(msg.from, msg.text);
+			uiRenderMessage(msg.from, msg.text, msg.time);
 			uiScrollHistory();
 			break;
 		case "user_list":
@@ -99,13 +99,13 @@ function uiOnMessage(msg) {
 		case "user_joined":
 			listAdd(uiUserList, msg.user);
 			uiRenderUserList();
-			uiRenderWebMessage(msg.user + " joined the chat.");
+			uiRenderWebMessage(msg.user + " joined the chat.", msg.time);
 			uiScrollHistory();
 			break;
 		case "user_left":
 			listRemove(uiUserList, msg.user);
 			uiRenderUserList();
-			uiRenderWebMessage(msg.user + " left the chat.");
+			uiRenderWebMessage(msg.user + " left the chat.", msg.time);
 			uiScrollHistory();
 			break;
 		case "history":
@@ -113,13 +113,13 @@ function uiOnMessage(msg) {
 			msg.hist.forEach(function (msg) {
 				switch(msg.type) {
 					case "message":
-						uiRenderMessage(msg.from, msg.text);
+						uiRenderMessage(msg.from, msg.text, msg.time);
 						break;
 					case "user_joined":
-						uiRenderWebMessage(msg.user + " joined the chat.");
+						uiRenderWebMessage(msg.user + " joined the chat.", msg.time);
 						break;
 					case "user_left":
-						uiRenderWebMessage(msg.user + " left the chat.");
+						uiRenderWebMessage(msg.user + " left the chat.", msg.time);
 						break;
 				}
 			});
@@ -145,14 +145,15 @@ function uiRenderUserList() {
 	});
 }
 
-function uiRenderMessage(from, text) {
+function uiRenderMessage(from, text, time) {
+	var from = localTime(time) + " - " + from;
 	var text = urlize(text, {autoescape: true, target: "_blank"});
 	var entry = $("<p>: " + text + "</p>").appendTo(chatHistory);
 	$("<span class=\"chat-username\"></span>").text(from).prependTo(entry);
 }
 
-function uiRenderWebMessage(text) {
-	$("<p></p>").text(text).appendTo(chatHistory);
+function uiRenderWebMessage(text, time) {
+	$("<p></p>").text(localTime(time) + " - " + text).appendTo(chatHistory);
 }
 
 function uiEnableControls() {
@@ -199,6 +200,17 @@ function listRemove(array, value) {
 	if(idx > -1) {
 		array.splice(idx, 1);
 	}
+}
+
+function localTime(utcTimestamp) {
+	var date = new Date(utcTimestamp * 1000);
+	var hours = date.getHours();
+	var minutes = date.getMinutes();
+
+	if(hours < 10) hours = "0" + hours;
+	if(minutes < 10) minutes = "0" + minutes;
+
+	return hours + ":" + minutes;
 }
 
 // --------------------------------------------------------------------------

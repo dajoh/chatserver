@@ -55,7 +55,7 @@ handle_call({join_room, Name}, {Pid, _}, {PidToName, NameToPid}) ->
 					{reply, {error, name_taken}, {PidToName, NameToPid}};
 				false ->
 					monitor(process, Pid),
-					broadcast({connected, Name}, PidToName),
+					broadcast({connected, Name, utc_timestamp()}, PidToName),
 					NewPidToName = dict:store(Pid, Name, PidToName),
 					NewNameToPid = dict:store(Name, Pid, NameToPid),
 					{reply, {ok, dict:to_list(NewPidToName)}, {NewPidToName, NewNameToPid}}
@@ -67,7 +67,7 @@ handle_call(_Request, _From, State) ->
 handle_cast({send_message, Pid, Text}, {PidToName, NameToPid}) ->
 	case dict:is_key(Pid, PidToName) of
 		true ->
-			broadcast({message, dict:fetch(Pid, PidToName), Text}, PidToName);
+			broadcast({message, dict:fetch(Pid, PidToName), Text, utc_timestamp()}, PidToName);
 		false ->
 			omg_plz
 	end,
@@ -77,7 +77,7 @@ handle_cast(_Msg, State) ->
 
 handle_info({'DOWN', _, process, Pid, _}, {PidToName, NameToPid}) ->
 	Name = dict:fetch(Pid, PidToName),
-	broadcast({disconnected, Name}, PidToName),
+	broadcast({disconnected, Name, utc_timestamp()}, PidToName),
 	{noreply, {
 		dict:erase(Pid, PidToName),
 		dict:erase(Name, NameToPid)
@@ -98,3 +98,7 @@ code_change(_OldVsn, State, _Extra) ->
 broadcast(Msg, PidToName) ->
 	chatserver_hist:append(Msg),
 	dict:map(fun (Pid, _) -> Pid ! Msg end, PidToName).
+
+utc_timestamp() ->
+	{Mega, Secs, _} = now(),
+	Mega * 1000000 + Secs.

@@ -51,27 +51,30 @@ websocket_handle(_Any, Req, State) ->
 	{ok, Req, State}.
 
 %% Called on broadcasts from other users.
-websocket_info({message, Name, Msg}, Req, State) ->
+websocket_info({message, Name, Msg, Time}, Req, State) ->
 	Json = jiffy:encode({[
 		{type, message},
 		{from, Name},
-		{text, Msg}
+		{text, Msg},
+		{time, Time}
 	]}),
 	{reply, {text, Json}, Req, State};
 
 %% Called on connections from other users.
-websocket_info({connected, Name}, Req, State) ->
+websocket_info({connected, Name, Time}, Req, State) ->
 	Json = jiffy:encode({[
 		{type, user_joined},
-		{user, Name}
+		{user, Name},
+		{time, Time}
 	]}),
 	{reply, {text, Json}, Req, State};
 
 %% Called on disconnects from other users.
-websocket_info({disconnected, Name}, Req, State) ->
+websocket_info({disconnected, Name, Time}, Req, State) ->
 	Json = jiffy:encode({[
 		{type, user_left},
-		{user, Name}
+		{user, Name},
+		{time, Time}
 	]}),
 	{reply, {text, Json}, Req, State};
 
@@ -101,12 +104,12 @@ get_error_json(Reason) ->
 %% Formats the history buffer as JSON.
 get_history_json() ->
 	History = lists:map(
-		fun ({message, From, Text}) ->
-				{[{type, message}, {from, From}, {text, Text}]};
-			({connected, User}) ->
-				{[{type, user_joined}, {user, User}]};
-			({disconnected, User}) ->
-				{[{type, user_left}, {user, User}]}
+		fun ({message, From, Text, Time}) ->
+				{[{type, message}, {from, From}, {text, Text}, {time, Time}]};
+			({connected, User, Time}) ->
+				{[{type, user_joined}, {user, User}, {time, Time}]};
+			({disconnected, User, Time}) ->
+				{[{type, user_left}, {user, User}, {time, Time}]}
 	end, chatserver_hist:retrieve()),
 	jiffy:encode({[
 		{type, history},
