@@ -6,6 +6,11 @@ A websocket chat server with a web interface.
 Backend written in Erlang using Cowboy and Jiffy. Frontend written in
 HTML5 using Bootstrap (darkly theme), jQuery, and urlizer.
 
+Live Demo
+---------
+
+You can see chatserver live at http://chat.awfully.sexy/
+
 License
 -------
 

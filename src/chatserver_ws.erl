@@ -21,7 +21,13 @@ websocket_init(_TransportName, Req, _Opts) ->
 
 %% Called when we get a JSON message.
 websocket_handle({text, Json}, Req, State) ->
-	handle_ejson_message(jiffy:decode(Json), Req, State);
+	try handle_ejson_message(jiffy:decode(Json), Req, State) of
+		Result -> Result
+	catch
+		Exception ->
+			io:format("JSON error: ~p~n", [Exception]),
+			{ok, Req, State}
+	end;
 
 %% Called when we get an unknown message.
 websocket_handle(_Any, Req, State) ->
@@ -70,7 +76,12 @@ handle_ejson_message({[{<<"type">>, <<"message">>}, {<<"text">>, Text}]}, Req, S
 %% Handles history requests.
 handle_ejson_message({[{<<"type">>, <<"get_history">>}]}, Req, State) ->
 	Json = jiffy:encode(get_history_ejson(chatserver_hist:retrieve())),
-	{reply, {text, Json}, Req, State}.
+	{reply, {text, Json}, Req, State};
+
+%% Handles unknown messages.
+handle_ejson_message(Msg, Req, State) ->
+	io:format("Unknown message: ~p~n", [Msg]),
+	{ok, Req, State}.
 
 %% Formats messages as JSON.
 get_room_message_ejson({message, From, Text, Time}) -> {[
