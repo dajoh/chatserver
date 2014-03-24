@@ -62,6 +62,7 @@ function apiGetHistory() {
 
 var uiName = null;
 var uiUserList = [];
+var uiBaseTitle = document.title;
 var uiLastIsLeave = false;
 var uiLastLeaveName = "";
 
@@ -94,6 +95,7 @@ function uiOnMessage(msg) {
 			uiScrollHistory();
 			break;
 		case "user_list":
+			document.title = uiBaseTitle + " - " + uiName;
 			uiUserList = msg.list;
 			uiEnableControls();
 			uiRenderUserList();
@@ -151,6 +153,7 @@ function uiOnMessage(msg) {
 }
 
 function uiOnDisconnect() {
+	document.title = uiBaseTitle;
 	uiDisableControls();
 	infoNotice.text("reconnecting").slideDown(600);
 	netConnect();
