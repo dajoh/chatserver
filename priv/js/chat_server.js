@@ -204,11 +204,11 @@ chatSendBtn.click(function(e) {
 });
 
 chatSetNameSubmit.click(function(e) {
-	if(chatSetNameText.val() == "") {
+	if(chatSetNameText.val().trim() == "") {
 		return;
 	}
 
-	uiName = chatSetNameText.val();
+	uiName = chatSetNameText.val().trim();
 	apiJoin(uiName);
 });
 
