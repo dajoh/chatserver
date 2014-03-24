@@ -195,11 +195,11 @@ function uiDisableControls() {
 chatSendBtn.click(function(e) {
 	e.preventDefault();
 
-	if(chatMsgBox.val() == "") {
+	if(chatMsgBox.val().trim() == "") {
 		return;
 	}
 
-	apiSend(chatMsgBox.val());
+	apiSend(chatMsgBox.val().trim());
 	chatMsgBox.val("");
 });
 
