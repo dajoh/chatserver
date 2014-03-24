@@ -62,6 +62,8 @@ function apiGetHistory() {
 
 var uiName = null;
 var uiUserList = [];
+var uiLastIsLeave = false;
+var uiLastLeaveName = "";
 
 function uiOnConnect() {
 	infoNotice.slideUp(600);
@@ -87,6 +89,7 @@ function uiOnMessage(msg) {
 			infoError.slideDown(600).delay(2500).slideUp(600);
 			break;
 		case "message":
+			uiLastIsLeave = false;
 			uiRenderMessage(msg.from, msg.text, msg.time);
 			uiScrollHistory();
 			break;
@@ -99,10 +102,19 @@ function uiOnMessage(msg) {
 		case "user_joined":
 			listAdd(uiUserList, msg.user);
 			uiRenderUserList();
+			if(uiLastIsLeave) {
+				uiLastIsLeave = false;
+				if(uiLastLeaveName == msg.user) {
+					$("#chat-history p:last-child").remove();
+					break;
+				}
+			}
 			uiRenderWebMessage(msg.user + " joined the chat.", msg.time);
 			uiScrollHistory();
 			break;
 		case "user_left":
+			uiLastIsLeave = true;
+			uiLastLeaveName = msg.user;
 			listRemove(uiUserList, msg.user);
 			uiRenderUserList();
 			uiRenderWebMessage(msg.user + " left the chat.", msg.time);
@@ -113,12 +125,22 @@ function uiOnMessage(msg) {
 			msg.hist.forEach(function (msg) {
 				switch(msg.type) {
 					case "message":
+						uiLastIsLeave = false;
 						uiRenderMessage(msg.from, msg.text, msg.time);
 						break;
 					case "user_joined":
+						if(uiLastIsLeave) {
+							uiLastIsLeave = false;
+							if(uiLastLeaveName == msg.user) {
+								$("#chat-history p:last-child").remove();
+								break;
+							}
+						}
 						uiRenderWebMessage(msg.user + " joined the chat.", msg.time);
 						break;
 					case "user_left":
+						uiLastIsLeave = true;
+						uiLastLeaveName = msg.user;
 						uiRenderWebMessage(msg.user + " left the chat.", msg.time);
 						break;
 				}
